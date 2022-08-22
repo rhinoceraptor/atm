@@ -1,3 +1,4 @@
+export const bankCorpAtmAccountId = 'BANK_CORP_INC_ATM_324'
 
 export const welcomeText = `
   +---------------------------------------------+

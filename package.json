@@ -7,7 +7,7 @@
     "build": "tsc",
     "build-client": "webpack",
     "build-watch": "tsc --watch",
-    "clean": "tsc --build --clean && rm dist/*",
+    "clean": "tsc --build --clean && rm -rf dist/*",
     "test": "jest --testPathPattern \"/*.test.ts\"",
     "test-watch": "jest --watch --testPathPattern \"/*.test.ts\"",
     "lint": "eslint . --ext .ts"
@@ -15,6 +15,7 @@
   "author": "Jack Lewis <jack@jacklew.is>",
   "license": "BSD-2-Clause",
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.8",
     "@types/ramda": "^0.28.15",

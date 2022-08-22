@@ -65,6 +65,7 @@ export class Atm {
         }
 
         const user = { accountId, pin }
+
         if (await this.dbClient.checkCredentials(user)) {
             this.currentUser = user
 
