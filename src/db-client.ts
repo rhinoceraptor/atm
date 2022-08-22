@@ -101,19 +101,13 @@ export class DbClient {
         return accounts.length === 1
     }
 
-    selectAccountId(accountId: string) {
-        return this.db
-            .selectFrom('account')
-            .select('id')
-            .where('account_id', '=', accountId)
-    }
-
     async getBalance(user: User): Promise<number> {
         const balances = await this.db
             .selectFrom('balance')
             .select('current_balance')
             .leftJoin('account', 'balance.account_id', 'account.id')
             .where('account.account_id', '=', user.accountId)
+            .where('account.pin', '=', user.pin)
             .execute()
 
         if (!balances.length) {
@@ -138,11 +132,7 @@ export class DbClient {
     }
 
     async deposit(user: User, amount: number): Promise<number> {
-        const now = new Date().toISOString()
-
-        // Add the deposited balance to the user, and the ATM psuedo-account
         await this.addToBalance(user, amount)
-        await this.addToBalance(atmPsuedoAccount, amount)
 
         const balance = await this.getBalance(user)
 
