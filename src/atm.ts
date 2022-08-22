@@ -9,15 +9,21 @@ export type OutputText = {
     (text: string): void;
 }
 
+export type EndServer = {
+    (): void
+}
+
 export class Atm {
     state: AtmState
     dbClient: DbClient
     outputText: OutputText
+    endServer: EndServer
     currentUser?: User
 
-    constructor(outputText: OutputText, dbClient: DbClient) {
+    constructor(outputText: OutputText, endServer: EndServer, dbClient: DbClient) {
         this.state = 'READY'
         this.outputText = outputText
+        this.endServer = endServer
         this.dbClient = dbClient
 
         this.outputText(welcomeText)
@@ -108,7 +114,7 @@ export class Atm {
     }
 
     end(): void {
-        process.exit(0)
+        this.endServer()
     }
 
     commandNotFound(command: string): void {

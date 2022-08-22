@@ -8,9 +8,13 @@ const outputText = (text: string) => {
     console.log(text)
 }
 
+const endServer = () => {
+    process.exit(0)
+}
+
 const run = async () => {
   const dbClient = new DbClient()
-  const atm = new Atm(outputText, dbClient)
+  const atm = new Atm(outputText, endServer, dbClient)
 
   const rl = readline.createInterface({ input, output });
 
