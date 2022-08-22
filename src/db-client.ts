@@ -1,3 +1,46 @@
+import Database from 'better-sqlite3'
+import { promises as fs } from 'fs'
+import path from 'path'
+import {
+  Kysely,
+  sql,
+  Migrator,
+  FileMigrationProvider,
+  SqliteDialect,
+  Generated,
+  ColumnType,
+  Selectable,
+  Insertable,
+  Updateable,
+} from 'kysely'
+import { bankCorpAtmAccountId, bankCorpAtmPin } from './strings'
+
+interface AccountTable {
+  id: Generated<number>
+  account_id: string
+  pin: string
+}
+
+interface BalanceTable {
+  id: Generated<number>
+  account_id: number
+  current_balance_cents: number
+}
+
+interface HistoryTable {
+    id: Generated<number>
+    from_account_id: number,
+    to_account_id: number,
+    amount_cents: number,
+    unix_timestamp: number
+}
+
+
+export interface Database {
+    account: AccountTable
+    balance: BalanceTable
+    history: HistoryTable
+}
 
 export type User = {
     accountId: string,
@@ -19,24 +62,101 @@ export class BalanceOverdrawnError extends Error {
 }
 
 export class DbClient {
-    constructor() {
-    }
+    db: Kysely<Database>
+    atmPsuedoAccount: User
 
-    async checkCredentials(user: User): Promise<boolean> {
-        if (user.accountId === 'user' && user.pin === '1234') {
-          return true
-        } else {
-          return false
+    constructor() {
+        this.db = new Kysely<Database>({
+            dialect: new SqliteDialect({ database: new Database(':memory:') })
+        })
+
+        this.atmPsuedoAccount = {
+            accountId: bankCorpAtmAccountId,
+            pin: bankCorpAtmPin
         }
     }
 
-    async deposit(amount: number): Promise<number> {
-        return 20
+    async initialize(): Promise<void> {
+        const migrator = new Migrator({
+            db: this.db,
+            provider: new FileMigrationProvider({
+                fs,
+                path,
+                migrationFolder: path.join(__dirname, '..', 'migrations')
+            })
+        });
+        await migrator.migrateToLatest()
+    }
+
+    async debug(): Promise<void> {
+        const accounts = await this.db.selectFrom('account').selectAll().execute()
+        const balances = await this.db.selectFrom('balance').selectAll().execute()
+        const history = await this.db.selectFrom('balance').selectAll().execute()
+
+        console.log({ accounts, balances, history })
+    }
+
+    async checkCredentials(user: User): Promise<boolean> {
+        const accounts = await this.db
+            .selectFrom('account')
+            .selectAll()
+            .where('account_id', '=', user.accountId)
+            .where('pin', '=', user.pin)
+            .execute()
+
+        return accounts.length === 1
+    }
+
+    selectAccountId(accountId: string) {
+        return this.db
+            .selectFrom('account')
+            .select('id')
+            .where('account_id', '=', accountId)
+    }
+
+    async getBalance(user: User): Promise<number> {
+        const balances = await this.db
+            .selectFrom('balance')
+            .select('current_balance_cents')
+            .leftJoin('account', 'balance.account_id', 'account.id')
+            .where('account.account_id', '=', user.accountId)
+            .execute()
+
+        if (!balances.length) {
+            throw new Error(`User ${user.accountId} not found!`)
+        }
+
+        return balances[0].current_balance_cents
+    }
+
+    async addToBalance(user: User, amount: number): Promise<void> {
+        await this.db
+            .updateTable('balance')
+            // This looks like a SQL injection, but it isn't:
+            // https://koskimas.github.io/kysely/interfaces/Sql.html
+            .set({ current_balance_cents: sql`current_balance_cents + ${amount}` })
+            .whereExists(qb => qb
+                .selectFrom('account')
+                .select('id')
+                .where('account_id', '=', user.accountId)
+                .whereRef('balance.account_id', '=', 'account.id'))
+    }
+
+    async deposit(user: User, amount: number): Promise<number> {
+        const now = new Date().toISOString()
+
+        // Add the deposited balance to the user, and the ATM psuedo-account
+        await this.addToBalance(user, amount * 100)
+        await this.addToBalance(this.atmPsuedoAccount, amount * 100)
+
+        const balance = await this.getBalance(user)
+
+        // TODO Add History
+
+        return balance
     }
 
     async withdraw(amount: number): Promise<number | BalanceOverdrawnError> {
         return 20
     }
-
-
 }

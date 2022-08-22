@@ -7,12 +7,11 @@ export async function up(db: Kysely<any>): Promise<void> {
       .addColumn('from_account_id', 'integer', col => col.references('account.id'))
       .addColumn('to_account_id', 'integer', col => col.references('account.id'))
       .addColumn('amount_cents', 'integer', col => col.notNull())
-      .addColumn('unix_timestamp', 'integer', col => col.notNull())
+      .addColumn('datetime', 'text', col => col.notNull())
       .execute()
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
     await db.schema.dropTable('history').execute()
 }
-
 

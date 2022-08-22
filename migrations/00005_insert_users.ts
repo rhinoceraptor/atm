@@ -1,12 +1,12 @@
 import { Kysely } from 'kysely'
-import { bankCorpAtmAccountId } from '../src/strings'
+import { bankCorpAtmAccountId, bankCorpAtmPin } from '../src/strings'
 
 export async function up(db: Kysely<any>): Promise<void> {
     await db
         .insertInto('account')
         .values([{
             account_id: bankCorpAtmAccountId,
-            pin: '2345'
+            pin: bankCorpAtmPin
         }, {
             account_id: 'user1',
             pin: '1234'

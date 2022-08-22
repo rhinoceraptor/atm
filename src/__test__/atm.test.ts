@@ -1,6 +1,11 @@
+import Database from 'better-sqlite3'
+import { Kysely } from 'kysely'
 import { OutputText, EndServer, Atm } from '../atm'
 import { DbClient } from '../db-client'
 import { helpText } from '../strings'
+
+jest.mock('../db-client')
+
 
 describe('ATM', () => {
     let outputText: OutputText
@@ -24,15 +29,27 @@ describe('ATM', () => {
 
     describe('authorize', () => {
         it('should log in given a valid account id and pin', async () => {
+            let checkCredentialsMock = jest
+                .spyOn(DbClient.prototype, 'checkCredentials')
+                .mockImplementation(async () => true)
+
             await atm.handleCommand('authorize user 1234')
             expect(outputText).toHaveBeenCalledWith('user successfully authorized.')
             expect(atm.currentUser).toEqual({ accountId: 'user', pin: '1234' })
+            expect(checkCredentialsMock)
+                .toHaveBeenCalledWith({ accountId: 'user', pin: '1234' })
         })
 
         it('should reject logging, given an invalid account id and pin', async () => {
+            let checkCredentialsMock = jest
+                .spyOn(DbClient.prototype, 'checkCredentials')
+                .mockImplementation(async () => false)
+
             await atm.handleCommand('authorize fhqwhgads 1234')
             expect(outputText).toHaveBeenCalledWith('Authorization failed.')
             expect(atm.currentUser).toBeFalsy()
+            expect(checkCredentialsMock)
+                .toHaveBeenCalledWith({ accountId: 'fhqwhgads', pin: '1234' })
         })
     })
 

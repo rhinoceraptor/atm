@@ -42,13 +42,15 @@ export class Atm {
             case 'deposit':
                 return await this.deposit(args)
             case 'balance':
-                return await this.balance(args)
+                return await this.balance()
             case 'history':
                 return await this.history(args)
             case 'logout':
                 return this.logout(args)
             case 'end':
                 return this.end()
+            case '__debug__':
+                return this.debug()
             default:
                 return this.commandNotFound(command)
         }
@@ -89,13 +91,30 @@ export class Atm {
             return this.outputText('Authorization required.')
         }
 
+        if (!args.length) {
+            this.outputText('Invalid amount.')
+        }
+
+        const amount = parseFloat(args[0])
+
+        if (isNaN(amount) || amount <= 0) {
+            this.outputText('Invalid amount.')
+        }
+
+        const newBalance = await this.dbClient.deposit(this.currentUser, amount)
+
+        return this.outputText(`Current balance: $${(newBalance / 100).toString()}`)
+
     }
 
-    async balance(args: Array<string>): Promise<void> {
+    async balance(): Promise<void> {
         if (!this.currentUser) {
             return this.outputText('Authorization required.')
         }
 
+        const balance = await this.dbClient.getBalance(this.currentUser)
+
+        return this.outputText(`Current balance: $${(balance / 100).toString()}`)
     }
 
     async history(args: Array<string>): Promise<void> {
@@ -116,6 +135,10 @@ export class Atm {
 
     end(): void {
         this.endServer()
+    }
+
+    async debug(): Promise<void> {
+        await this.dbClient.debug()
     }
 
     commandNotFound(command: string): void {

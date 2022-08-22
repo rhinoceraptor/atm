@@ -3,7 +3,6 @@ import { stdin as input, stdout as output } from 'node:process';
 
 import { Atm } from './atm'
 import { DbClient } from './db-client'
-import { DbConnection } from './db-connection'
 
 const outputText = (text: string) => {
     console.log(text)
@@ -15,9 +14,7 @@ const endServer = () => {
 
 const run = async () => {
     const dbClient = new DbClient()
-    const dbConnection = new DbConnection()
-    await dbConnection.initialize()
-    await dbConnection.test()
+    await dbClient.initialize()
     const atm = new Atm(outputText, endServer, dbClient)
 
     const rl = readline.createInterface({ input, output });
