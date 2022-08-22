@@ -1,4 +1,4 @@
-import { welcomeText, helpText } from './strings'
+import { welcomeText, helpText, atmPsuedoAccount } from './constants'
 import { User, History, DbClient } from './db-client'
 
 export type AtmState =
@@ -82,8 +82,42 @@ export class Atm {
             return this.outputText('Authorization required.')
         }
 
-        const amount = args[0]
-        console.log(amount)
+        if (!args.length) {
+            return this.outputText('Invalid amount.')
+        }
+
+        const amount = parseFloat(args[0])
+
+        if (isNaN(amount) || amount <= 0) {
+            return this.outputText('Invalid amount.')
+        }
+
+        const balance = await this.dbClient.getBalance(this.currentUser)
+        const atmBalance = await this.dbClient.getBalance(atmPsuedoAccount)
+
+        // Is ATM empty?
+        if (atmBalance === 0) {
+            return this.outputText('Unable to process your withdrawal at this time.')
+        }
+
+        const overdrafted = balance - amount < 0
+        const fees = overdrafted ? 5 : 0
+        const cannotWithdrawFull = atmBalance - amount < 0
+        const cashAmount = cannotWithdrawFull ? atmBalance : amount
+
+        const newBalance = await this.dbClient.withdraw(this.currentUser, cashAmount + fees)
+        const newAtmBalance = await this.dbClient.withdraw(atmPsuedoAccount, cashAmount)
+
+        const cannotWithdrawFullMsg = cannotWithdrawFull
+            ? 'Unable to dispense full amount requested at this time. '
+            : ''
+        this.outputText(`${cannotWithdrawFullMsg}Amount dispensed: $${cashAmount}`)
+
+        const overdraftedMsg = overdrafted
+            ? 'You have been charged an overdraft fee of $5. '
+            : ''
+
+        return this.outputText(`${overdraftedMsg}Current balance: $${newBalance}`)
     }
 
     async deposit(args: Array<string>): Promise<void> {
@@ -92,18 +126,19 @@ export class Atm {
         }
 
         if (!args.length) {
-            this.outputText('Invalid amount.')
+            return this.outputText('Invalid amount.')
         }
 
         const amount = parseFloat(args[0])
 
         if (isNaN(amount) || amount <= 0) {
-            this.outputText('Invalid amount.')
+            return this.outputText('Invalid amount.')
         }
 
         const newBalance = await this.dbClient.deposit(this.currentUser, amount)
+        await this.dbClient.deposit(atmPsuedoAccount, amount)
 
-        return this.outputText(`Current balance: $${(newBalance / 100).toString()}`)
+        return this.outputText(`Current balance: $${newBalance}`)
 
     }
 
@@ -114,7 +149,7 @@ export class Atm {
 
         const balance = await this.dbClient.getBalance(this.currentUser)
 
-        return this.outputText(`Current balance: $${(balance / 100).toString()}`)
+        return this.outputText(`Current balance: $${balance}`)
     }
 
     async history(args: Array<string>): Promise<void> {

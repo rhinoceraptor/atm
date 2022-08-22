@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely'
-import { bankCorpAtmAccountId, bankCorpAtmPin } from '../src/strings'
+import { bankCorpAtmAccountId, bankCorpAtmPin } from '../src/constants'
 
 export async function up(db: Kysely<any>): Promise<void> {
     await db
@@ -28,16 +28,16 @@ export async function up(db: Kysely<any>): Promise<void> {
         .insertInto('balance')
         .values([{
             account_id: accountIdFor(bankCorpAtmAccountId),
-            current_balance_cents: 10000 * 100
+            current_balance: 10000
         }, {
             account_id: accountIdFor('user1'),
-            current_balance_cents: 300.48 * 100
+            current_balance: 300.48
         }, {
             account_id: accountIdFor('cooluser'),
-            current_balance_cents: 578.23 * 100
+            current_balance: 578.23
         }, {
             account_id: accountIdFor('brokeuser'),
-            current_balance_cents: -30.24 * 100
+            current_balance: -30.24
         }])
         .execute()
 }

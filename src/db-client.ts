@@ -13,7 +13,7 @@ import {
   Insertable,
   Updateable,
 } from 'kysely'
-import { bankCorpAtmAccountId, bankCorpAtmPin } from './strings'
+import { atmPsuedoAccount } from './constants'
 
 interface AccountTable {
   id: Generated<number>
@@ -24,7 +24,7 @@ interface AccountTable {
 interface BalanceTable {
   id: Generated<number>
   account_id: number
-  current_balance_cents: number
+  current_balance: number
 }
 
 interface HistoryTable {
@@ -63,17 +63,11 @@ export class BalanceOverdrawnError extends Error {
 
 export class DbClient {
     db: Kysely<Database>
-    atmPsuedoAccount: User
 
     constructor() {
         this.db = new Kysely<Database>({
             dialect: new SqliteDialect({ database: new Database(':memory:') })
         })
-
-        this.atmPsuedoAccount = {
-            accountId: bankCorpAtmAccountId,
-            pin: bankCorpAtmPin
-        }
     }
 
     async initialize(): Promise<void> {
@@ -117,7 +111,7 @@ export class DbClient {
     async getBalance(user: User): Promise<number> {
         const balances = await this.db
             .selectFrom('balance')
-            .select('current_balance_cents')
+            .select('current_balance')
             .leftJoin('account', 'balance.account_id', 'account.id')
             .where('account.account_id', '=', user.accountId)
             .execute()
@@ -126,7 +120,7 @@ export class DbClient {
             throw new Error(`User ${user.accountId} not found!`)
         }
 
-        return balances[0].current_balance_cents
+        return balances[0].current_balance
     }
 
     async addToBalance(user: User, amount: number): Promise<void> {
@@ -134,20 +128,21 @@ export class DbClient {
             .updateTable('balance')
             // This looks like a SQL injection, but it isn't:
             // https://koskimas.github.io/kysely/interfaces/Sql.html
-            .set({ current_balance_cents: sql`current_balance_cents + ${amount}` })
+            .set({ current_balance: sql`current_balance + ${amount}` })
             .whereExists(qb => qb
                 .selectFrom('account')
                 .select('id')
                 .where('account_id', '=', user.accountId)
                 .whereRef('balance.account_id', '=', 'account.id'))
+            .execute()
     }
 
     async deposit(user: User, amount: number): Promise<number> {
         const now = new Date().toISOString()
 
         // Add the deposited balance to the user, and the ATM psuedo-account
-        await this.addToBalance(user, amount * 100)
-        await this.addToBalance(this.atmPsuedoAccount, amount * 100)
+        await this.addToBalance(user, amount)
+        await this.addToBalance(atmPsuedoAccount, amount)
 
         const balance = await this.getBalance(user)
 
@@ -156,7 +151,16 @@ export class DbClient {
         return balance
     }
 
-    async withdraw(amount: number): Promise<number | BalanceOverdrawnError> {
-        return 20
+    async withdraw(user: User, amount: number): Promise<number | BalanceOverdrawnError> {
+        const now = new Date().toISOString()
+
+        await this.addToBalance(user, amount * -1)
+
+        const newBalance = await this.getBalance(user)
+
+        // TODO Add History
+
+        return newBalance
+
     }
 }
