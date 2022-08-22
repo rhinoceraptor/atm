@@ -39,6 +39,13 @@ describe('ATM', () => {
             .mockImplementation(async () => 20)
     })
 
+    afterEach(() => {
+        checkCredentialsMock.mockReset()
+        depositMock.mockReset()
+        getBalanceMock.mockReset()
+        withdrawMock.mockReset()
+    })
+
     describe('help', () => {
         it('should print the help text', async () => {
             await atm.handleCommand('help')
@@ -111,7 +118,11 @@ describe('ATM', () => {
         it('should withdraw what it can if the requested amount is more than the ATM balance', async () => {
             getBalanceMock = jest
                 .spyOn(DbClient.prototype, 'getBalance')
-                .mockImplementation(async () => 20)
+                .mockImplementation(async (user) =>
+                    user.accountId === atmPsuedoAccount.accountId
+                        ? 20
+                        : 30
+                )
 
             await atm.handleCommand('withdraw 30')
             expect(outputText).toHaveBeenCalledWith(
@@ -121,7 +132,7 @@ describe('ATM', () => {
             expect(withdrawMock).toHaveBeenCalledWith(atmPsuedoAccount, 20)
         })
 
-        it('should charge a $5 fee for overdraft withdrawals', async () => {
+        it('should charge a $5 fee for overdrawn withdrawals', async () => {
             getBalanceMock = jest
                 .spyOn(DbClient.prototype, 'getBalance')
                 .mockImplementation(async (user) =>
@@ -137,6 +148,23 @@ describe('ATM', () => {
                 'Current balance: $45')
             expect(withdrawMock).toHaveBeenCalledWith({ accountId: 'user', pin: '1234' }, 45)
             expect(withdrawMock).toHaveBeenCalledWith(atmPsuedoAccount, 40)
+        })
+
+        it('should not allow withdrawals if the account is already overdrawn', async () => {
+            getBalanceMock = jest
+                .spyOn(DbClient.prototype, 'getBalance')
+                .mockImplementation(async (user) =>
+                    user.accountId === atmPsuedoAccount.accountId
+                        ? 400
+                        : -10
+                )
+
+            await atm.handleCommand('withdraw 40')
+            expect(outputText).toHaveBeenCalledWith(
+                'Your account is overdrawn! ' +
+                'You may not make withdrawals at this time.'
+            )
+            expect(withdrawMock).not.toHaveBeenCalled()
         })
     })
 

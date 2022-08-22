@@ -100,8 +100,16 @@ export class Atm {
             return this.outputText('Unable to process your withdrawal at this time.')
         }
 
-        const overdrafted = balance - amount < 0
-        const fees = overdrafted ? 5 : 0
+        // Is user already overdrawn?
+        if (balance < 0) {
+            return this.outputText(
+                'Your account is overdrawn! ' +
+                'You may not make withdrawals at this time.'
+            )
+        }
+
+        const overdrawn = balance - amount < 0
+        const fees = overdrawn ? 5 : 0
         const cannotWithdrawFull = atmBalance - amount < 0
         const cashAmount = cannotWithdrawFull ? atmBalance : amount
 
@@ -113,11 +121,11 @@ export class Atm {
             : ''
         this.outputText(`${cannotWithdrawFullMsg}Amount dispensed: $${cashAmount}`)
 
-        const overdraftedMsg = overdrafted
+        const overdrawnMsg = overdrawn
             ? 'You have been charged an overdraft fee of $5. '
             : ''
 
-        return this.outputText(`${overdraftedMsg}Current balance: $${newBalance}`)
+        return this.outputText(`${overdrawnMsg}Current balance: $${newBalance}`)
     }
 
     async deposit(args: Array<string>): Promise<void> {
