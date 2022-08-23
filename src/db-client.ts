@@ -170,8 +170,8 @@ export class DbClient {
             .execute()
 
         return records.map(r => ({
-            date: new Date(r.datetime).toString(),
-            time: new Date(r.datetime).toString(),
+            date: new Date(r.datetime).toLocaleDateString(),
+            time: new Date(r.datetime).toLocaleTimeString('en-US', { hour12: false }),
             amount: r.amount,
             newBalance: r.new_balance
         }))

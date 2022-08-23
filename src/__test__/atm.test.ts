@@ -15,6 +15,7 @@ describe('ATM', () => {
     let withdrawMock: any
     let getBalanceMock: any
     let depositMock: any
+    let getHistoryMock: any
 
     beforeEach(() => {
         outputText = jest.fn()
@@ -37,6 +38,15 @@ describe('ATM', () => {
         getBalanceMock = jest
             .spyOn(DbClient.prototype, 'getBalance')
             .mockImplementation(async () => 20)
+
+        getHistoryMock = jest
+            .spyOn(DbClient.prototype, 'getHistoryRecordsForUser')
+            .mockImplementation(async () => [{
+                date: '2022-01-01',
+                time: '12:00:00',
+                amount: 10,
+                newBalance: 20
+            }])
     })
 
     afterEach(() => {
@@ -211,6 +221,26 @@ describe('ATM', () => {
     })
 
     describe('history', () => {
+        beforeEach(async () => {
+            await atm.handleCommand('authorize user 1234')
+        })
+
+        it('should print "No history found" if no history found', async () => {
+            getHistoryMock = jest
+                .spyOn(DbClient.prototype, 'getHistoryRecordsForUser')
+                .mockImplementation(async () => [])
+
+            await atm.handleCommand('history')
+            expect(outputText).toHaveBeenCalledWith('No history found')
+        })
+
+        it('should print the history if history found', async () => {
+            await atm.handleCommand('history')
+            expect(outputText).not.toHaveBeenCalledWith('No history found')
+            expect(outputText).toHaveBeenCalledWith(
+                '2022-01-01 12:00:00 10 20'
+            )
+        })
     })
 
     describe('logout', () => {

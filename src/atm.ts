@@ -44,7 +44,7 @@ export class Atm {
             case 'balance':
                 return await this.balance()
             case 'history':
-                return await this.history(args)
+                return await this.history()
             case 'logout':
                 return this.logout(args)
             case 'end':
@@ -160,9 +160,19 @@ export class Atm {
         return this.outputText(`Current balance: $${balance}`)
     }
 
-    async history(args: Array<string>): Promise<void> {
+    async history(): Promise<void> {
         if (!this.currentUser) {
             return this.outputText('Authorization required.')
+        }
+
+        const historyRows = await this.dbClient.getHistoryRecordsForUser(this.currentUser)
+
+        if (!historyRows.length) {
+            return this.outputText('No history found')
+        } else {
+            return this.outputText(historyRows.map(r =>
+                `${r.date} ${r.time} ${r.amount} ${r.newBalance}`
+            ).join('\n'))
         }
 
     }
