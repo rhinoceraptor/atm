@@ -12,3 +12,8 @@ for the [main ATM logic](https://github.com/rhinoceraptor/atm/blob/main/src/atm.
 
 Then, I have a small [integration suite](https://github.com/rhinoceraptor/atm/blob/main/src/__test__/db-client.test.ts)
 for the [database wrapper code](https://github.com/rhinoceraptor/atm/blob/main/src/db-client.ts)
+
+## Running the application
+You'll need to run `npm ci`, `npm run build`, then `npm run start`.
+
+To run the test suite, run `npm run test`
