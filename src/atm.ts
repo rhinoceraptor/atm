@@ -1,10 +1,6 @@
 import { welcomeText, helpText, atmPsuedoAccount } from './constants'
 import { User, History, DbClient } from './db-client'
 
-export type AtmState =
-      'READY'
-    | 'LOGGED_IN'
-
 export type OutputText = {
     (text: string): void;
 }
@@ -14,14 +10,12 @@ export type EndServer = {
 }
 
 export class Atm {
-    state: AtmState
     dbClient: DbClient
     outputText: OutputText
     endServer: EndServer
     currentUser?: User
 
     constructor(outputText: OutputText, endServer: EndServer, dbClient: DbClient) {
-        this.state = 'READY'
         this.outputText = outputText
         this.endServer = endServer
         this.dbClient = dbClient
