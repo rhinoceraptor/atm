@@ -16,6 +16,18 @@ export async function up(db: Kysely<any>): Promise<void> {
         }, {
             account_id: 'brokeuser',
             pin: '1230'
+        }, {
+            account_id: '2859459814',
+            pin: '7386'
+        }, {
+            account_id: '1434597300',
+            pin: '4557'
+        }, {
+            account_id: '7089382418',
+            pin: '0075'
+        }, {
+            account_id: '2001377812',
+            pin: '5950'
         }])
         .execute()
 
@@ -38,6 +50,18 @@ export async function up(db: Kysely<any>): Promise<void> {
         }, {
             account_id: accountIdFor('brokeuser'),
             current_balance: -30.24
+        }, {
+            account_id: accountIdFor('2859459814'),
+            current_balance: 10.24
+        }, {
+            account_id: accountIdFor('1434597300'),
+            current_balance: 90000.55
+        }, {
+            account_id: accountIdFor('7089382418'),
+            current_balance: 0.00
+        }, {
+            account_id: accountIdFor('2001377812'),
+            current_balance: 60.00
         }])
         .execute()
 }

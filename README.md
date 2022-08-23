@@ -3,6 +3,7 @@
 An ATM simulator as an interactive program, written in Typescript, and backed by
 an in-memory Sqlite3 database. When the simulator starts, I have it run through
 a set of migrations, using the [Kysely](https://github.com/koskimas/kysely) library.
+The SQL queries are also constructed using it.
 
 
 ## Tests
