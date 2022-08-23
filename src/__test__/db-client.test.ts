@@ -50,6 +50,11 @@ describe('DbClient', () => {
         })
 
         it('should add a history record for the deposit', async () => {
+            await dbClient.deposit(user1, 10)
+            const historyRows = await dbClient.getHistoryRecordsForUser(user1)
+            expect(historyRows.length).toEqual(1)
+            expect(historyRows[0].amount).toEqual(10)
+            expect(historyRows[0].newBalance).toEqual(310.48)
         })
     })
 
@@ -61,6 +66,11 @@ describe('DbClient', () => {
         })
 
         it('should add a history record for the withdrawal', async () => {
+            await dbClient.withdraw(user1, 10)
+            const historyRows = await dbClient.getHistoryRecordsForUser(user1)
+            expect(historyRows.length).toEqual(1)
+            expect(historyRows[0].amount).toEqual(10)
+            expect(historyRows[0].newBalance).toEqual(290.48)
         })
     })
 })

@@ -29,10 +29,10 @@ interface BalanceTable {
 
 interface HistoryTable {
     id: Generated<number>
-    from_account_id: number,
-    to_account_id: number,
-    amount_cents: number,
-    unix_timestamp: number
+    account_id: number,
+    amount: number,
+    new_balance: number,
+    datetime: string
 }
 
 
@@ -48,18 +48,11 @@ export type User = {
 }
 
 export type History = Array<{
-  dateTime: Date,
-  amount: number,
-  balanceAfterTxn: number
+    date: string,
+    time: string,
+    amount: number,
+    newBalance: number
 }>
-
-export class BalanceOverdrawnError extends Error {
-    constructor(msg: string) {
-        super(msg);
-        // https://stackoverflow.com/a/41429145
-        Object.setPrototypeOf(this, BalanceOverdrawnError.prototype);
-    }
-}
 
 export class DbClient {
     db: Kysely<Database>
@@ -134,23 +127,53 @@ export class DbClient {
     async deposit(user: User, amount: number): Promise<number> {
         await this.addToBalance(user, amount)
 
-        const balance = await this.getBalance(user)
+        const newBalance = await this.getBalance(user)
 
-        // TODO Add History
+        await this.addHistoryRecord(user, amount, newBalance)
 
-        return balance
+        return newBalance
     }
 
-    async withdraw(user: User, amount: number): Promise<number | BalanceOverdrawnError> {
-        const now = new Date().toISOString()
-
+    async withdraw(user: User, amount: number): Promise<number> {
         await this.addToBalance(user, amount * -1)
 
         const newBalance = await this.getBalance(user)
 
-        // TODO Add History
+        await this.addHistoryRecord(user, amount, newBalance)
 
         return newBalance
+    }
 
+    async addHistoryRecord(user: User, amount: number, newBalance: number): Promise<void> {
+        const now = new Date().toISOString()
+
+        await this.db
+            .insertInto('history')
+            .values({
+                account_id: this.db
+                    .selectFrom('account')
+                    .select('id')
+                    .where('account_id', '=', user.accountId),
+                amount: amount,
+                new_balance: newBalance,
+                datetime: now
+            })
+            .execute()
+    }
+
+    async getHistoryRecordsForUser(user: User): Promise<History> {
+        const records = await this.db
+            .selectFrom('history')
+            .select(['datetime', 'amount', 'new_balance'])
+            .leftJoin('account', 'history.account_id', 'account.id')
+            .where('account.account_id', '=', user.accountId)
+            .execute()
+
+        return records.map(r => ({
+            date: new Date(r.datetime).toString(),
+            time: new Date(r.datetime).toString(),
+            amount: r.amount,
+            newBalance: r.new_balance
+        }))
     }
 }
