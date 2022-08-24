@@ -15,7 +15,8 @@ const endServer = () => {
 const run = async () => {
     const dbClient = new DbClient()
     await dbClient.initialize()
-    const atm = new Atm(outputText, endServer, dbClient)
+    const loginTimeoutMs = 1000 * 120
+    const atm = new Atm(outputText, endServer, dbClient, loginTimeoutMs)
 
     const rl = readline.createInterface({ input, output });
 

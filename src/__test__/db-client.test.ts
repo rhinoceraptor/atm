@@ -73,5 +73,25 @@ describe('DbClient', () => {
             expect(historyRows[0].newBalance).toEqual(290.48)
         })
     })
+
+    const delay = (ms: number): Promise<void> =>
+        new Promise(resolve => setTimeout(() => resolve(), ms))
+
+    describe('history', () => {
+        it('should return the history is descending order by time', async () => {
+            await dbClient.deposit(user1, 10)
+            await delay(10)
+            await dbClient.deposit(user1, 20)
+            await delay(10)
+            await dbClient.deposit(user1, 30)
+
+            const historyRows = await dbClient.getHistoryRecordsForUser(user1)
+            expect(historyRows.length).toEqual(3)
+            expect(historyRows[0].amount).toEqual(30)
+            expect(historyRows[1].amount).toEqual(20)
+            expect(historyRows[2].amount).toEqual(10)
+        })
+
+    })
 })
 

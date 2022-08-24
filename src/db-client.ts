@@ -167,6 +167,7 @@ export class DbClient {
             .select(['datetime', 'amount', 'new_balance'])
             .leftJoin('account', 'history.account_id', 'account.id')
             .where('account.account_id', '=', user.accountId)
+            .orderBy('datetime', 'desc')
             .execute()
 
         return records.map(r => ({

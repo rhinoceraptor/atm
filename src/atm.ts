@@ -14,11 +14,19 @@ export class Atm {
     outputText: OutputText
     endServer: EndServer
     currentUser?: User
+    loginTimeoutMs: number
+    timeoutId?: ReturnType<typeof setTimeout>
 
-    constructor(outputText: OutputText, endServer: EndServer, dbClient: DbClient) {
+    constructor(
+        outputText: OutputText,
+        endServer: EndServer,
+        dbClient: DbClient,
+        loginTimeoutMs: number
+    ) {
         this.outputText = outputText
         this.endServer = endServer
         this.dbClient = dbClient
+        this.loginTimeoutMs = loginTimeoutMs
 
         this.outputText(welcomeText)
     }
@@ -26,9 +34,11 @@ export class Atm {
     async handleCommand(commandStr: string): Promise<void> {
         const [command, ...args] = commandStr.trim().split(/\s+/)
 
+        this.markActivity()
+
         switch (command.toLowerCase()) {
             case 'help':
-                return this.help(command)
+                return this.help()
             case 'authorize':
                 return await this.authorize(args)
             case 'withdraw':
@@ -40,7 +50,7 @@ export class Atm {
             case 'history':
                 return await this.history()
             case 'logout':
-                return this.logout(args)
+                return this.logout()
             case 'end':
                 return this.end()
             case '__debug__':
@@ -50,8 +60,20 @@ export class Atm {
         }
     }
 
-    help(command: string): void {
+    help(): void {
         this.outputText(helpText)
+    }
+
+    markActivity(): void {
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId)
+        }
+
+        this.timeoutId = setTimeout(() => {
+            this.logout(true)
+
+        // }, 1000 * 60 * 2)
+        }, this.loginTimeoutMs)
     }
 
     async authorize(args: Array<string>): Promise<void> {
@@ -81,6 +103,10 @@ export class Atm {
         }
 
         const amount = parseFloat(args[0])
+
+        if (amount % 20 !== 0) {
+            return this.outputText('Invalid amount.')
+        }
 
         if (isNaN(amount) || amount <= 0) {
             return this.outputText('Invalid amount.')
@@ -171,12 +197,13 @@ export class Atm {
 
     }
 
-    logout(args: Array<string>): void {
-        if (!this.currentUser) {
+    logout(automaticLogout = false): void {
+        if (!this.currentUser && !automaticLogout) {
             return this.outputText('No account is currently authorized.')
         }
 
-        this.outputText(`Account ${this.currentUser.accountId} logged out.`)
+        this.outputText('logging out')
+        this.currentUser && this.outputText(`Account ${this.currentUser.accountId} logged out.`)
         delete this.currentUser
     }
 

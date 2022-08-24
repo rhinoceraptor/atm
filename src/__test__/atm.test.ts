@@ -21,7 +21,7 @@ describe('ATM', () => {
         outputText = jest.fn()
         endServer = jest.fn()
         dbClient = new DbClient()
-        atm = new Atm(outputText, endServer, dbClient)
+        atm = new Atm(outputText, endServer, dbClient, 1000 * 20)
 
         checkCredentialsMock = jest
             .spyOn(DbClient.prototype, 'checkCredentials')
@@ -108,6 +108,12 @@ describe('ATM', () => {
             expect(withdrawMock).not.toHaveBeenCalled()
         })
 
+        it('should display an error message when amount is not a multiple of 20', async () => {
+            await atm.handleCommand('withdraw 21')
+            expect(outputText).toHaveBeenCalledWith('Invalid amount.')
+            expect(withdrawMock).not.toHaveBeenCalled()
+        })
+
         it('should withdraw from the atm psuedo account balance', async () => {
             const newBalance = await atm.handleCommand('withdraw 20')
             expect(outputText).toHaveBeenCalledWith('Amount dispensed: $20')
@@ -131,10 +137,10 @@ describe('ATM', () => {
                 .mockImplementation(async (user) =>
                     user.accountId === atmPsuedoAccount.accountId
                         ? 20
-                        : 30
+                        : 40
                 )
 
-            await atm.handleCommand('withdraw 30')
+            await atm.handleCommand('withdraw 40')
             expect(outputText).toHaveBeenCalledWith(
                 'Unable to dispense full amount requested at this time. ' +
                 'Amount dispensed: $20')
